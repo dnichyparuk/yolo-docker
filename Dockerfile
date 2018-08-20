@@ -18,4 +18,6 @@ RUN sed -i "s/OPENCV=0/OPENCV=1/g" Makefile \
  #   && sed -i 's/LIBSO=0/LIBSO=1/g' Makefile 
 RUN make
 
-
+#RUN wget https://pjreddie.com/media/files/yolo.weights
+RUN wget https://pjreddie.com/media/files/yolov3.weights
+#RUN wget http://pjreddie.com/media/files/yolo9000.weights
