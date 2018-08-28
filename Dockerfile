@@ -7,17 +7,28 @@ RUN apt-get update \
     git \
     wget \
     unzip \
-    libopencv-dev 
+    libopencv-dev \
+    python-pip
 
 RUN git clone --branch master --depth 1 https://github.com/AlexeyAB/darknet.git
 
 WORKDIR /darknet
 RUN sed -i "s/OPENCV=0/OPENCV=1/g" Makefile \
     && sed -i 's/GPU=0/GPU=1/g' Makefile \
-    && sed -i 's/CUDNN=0/CUDNN=1/g' Makefile 
- #   && sed -i 's/LIBSO=0/LIBSO=1/g' Makefile 
+    && sed -i 's/CUDNN=0/CUDNN=1/g' Makefile \
+    && sed -i 's/LIBSO=0/LIBSO=1/g' Makefile
 RUN make
 
-#RUN wget https://pjreddie.com/media/files/yolo.weights
-RUN wget https://pjreddie.com/media/files/yolov3.weights
-#RUN wget http://pjreddie.com/media/files/yolo9000.weights
+RUN pip install opencv-python numpy scikit-image paho-mqtt pyyaml requests urllib3
+
+COPY /config/* /config/
+COPY /darknet/* /darknet/
+
+RUN wget --directory-prefix=/config https://pjreddie.com/media/files/yolov3.weights
+RUN wget --directory-prefix=/config https://pjreddie.com/media/files/yolov3-spp.weights
+
+VOLUME /config
+VOLUME /cctv/motion
+VOLUME /cctv/tagged
+
+CMD [ "python", "detect.py"]
