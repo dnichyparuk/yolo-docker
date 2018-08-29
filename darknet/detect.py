@@ -383,7 +383,7 @@ while True:
         recordingUrl = '{}/api/2.0/recording/{}/download?apiKey={}'.format(cfg['unifi']['host'],
                                                                            recording['_id'], cfg['unifi']['apiKey'])
 
-        videoFile = urllib.urlretrieve(recordingUrl, '{}/{}-{}.mp4'.format(cfg['unifi']['motionFolder'],
+        videoFile = urllib.urlretrieve(recordingUrl, '{}/{}-{}.mp4'.format(cfg['yolo']['motionFolder'],
                                                                            recording['_id'],
                                                                            recording['meta']['cameraName']))
 
@@ -391,7 +391,7 @@ while True:
             continue
 
         filename, file_extension = os.path.splitext(os.path.basename(videoFile[0]))
-        taggedVideo = cfg['unifi']['processedFolder'] + '/' + filename + '.avi'
+        taggedVideo = cfg['yolo']['processedFolder'] + '/' + filename + '.avi'
 
         detections = {
             'startTime': recordingTime,
