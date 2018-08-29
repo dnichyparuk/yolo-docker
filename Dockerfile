@@ -24,8 +24,8 @@ RUN pip install opencv-python numpy scikit-image paho-mqtt pyyaml requests urlli
 COPY /config/* /config/
 COPY /darknet/* /darknet/
 
-RUN wget --directory-prefix=/config https://pjreddie.com/media/files/yolov3.weights
-RUN wget --directory-prefix=/config https://pjreddie.com/media/files/yolov3-spp.weights
+#RUN wget --directory-prefix=/config https://pjreddie.com/media/files/yolov3.weights
+#RUN wget --directory-prefix=/config https://pjreddie.com/media/files/yolov3-spp.weights
 
 VOLUME /config
 VOLUME /cctv/motion
