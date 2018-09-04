@@ -373,9 +373,9 @@ while True:
             inProgressRecordings.remove(inProgressRecording)
 
     for recording in recordings:
-        recordingTime = datetime.datetime.utcfromtimestamp(recording['startTime']/1000)\
+        recordingTime = pytz.utc.localize(datetime.datetime.fromtimestamp(recording['startTime']/1000))\
             .astimezone(pst).strftime('%Y-%m-%d %H:%M:%S')
-        recordingStopTime = datetime.datetime.utcfromtimestamp(recording['endTime']/1000)\
+        recordingStopTime = pytz.utc.localize(datetime.datetime.fromtimestamp(recording['endTime']/1000))\
             .astimezone(pst).strftime('%Y-%m-%d %H:%M:%S')
 
         print('{}: {} {} inProgress={}'.format(recordingTime, recording['meta']['cameraName'],
