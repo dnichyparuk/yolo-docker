@@ -11,6 +11,7 @@ import json
 import datetime
 import paho.mqtt.client as paho
 import yaml
+import pytz
 
 with open("/config/detect.conf", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
@@ -347,6 +348,9 @@ print 'Initialized and waiting for motion...'
 inProgressRecordings = []
 startDate = int(round(time.time() * 1000))
 
+timeZone = 'Europe/Minsk'  # TODO: get from unifi server
+pst = pytz.timezone(timeZone)
+
 while True:
     time.sleep(cfg['unifi']['nvrScanInterval'])
 
@@ -369,8 +373,10 @@ while True:
             inProgressRecordings.remove(inProgressRecording)
 
     for recording in recordings:
-        recordingTime = datetime.datetime.fromtimestamp(recording['startTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
-        recordingStopTime = datetime.datetime.fromtimestamp(recording['endTime']/1000).strftime('%Y-%m-%d %H:%M:%S')
+        recordingTime = datetime.datetime.utcfromtimestamp(recording['startTime']/1000)\
+            .astimezone(pst).strftime('%Y-%m-%d %H:%M:%S')
+        recordingStopTime = datetime.datetime.utcfromtimestamp(recording['endTime']/1000)\
+            .astimezone(pst).strftime('%Y-%m-%d %H:%M:%S')
 
         print('{}: {} {} inProgress={}'.format(recordingTime, recording['meta']['cameraName'],
                                                recording['_id'], recording['inProgress']))

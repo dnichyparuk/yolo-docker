@@ -19,13 +19,10 @@ RUN sed -i "s/OPENCV=0/OPENCV=1/g" Makefile \
     && sed -i 's/LIBSO=0/LIBSO=1/g' Makefile
 RUN make
 
-RUN pip install opencv-python numpy scikit-image paho-mqtt pyyaml requests urllib3
+RUN pip install opencv-python numpy scikit-image paho-mqtt pyyaml requests urllib3 pytz
 
 COPY /config/* /config/
 COPY /darknet/* /darknet/
-
-#RUN wget --directory-prefix=/config https://pjreddie.com/media/files/yolov3.weights
-#RUN wget --directory-prefix=/config https://pjreddie.com/media/files/yolov3-spp.weights
 
 VOLUME /config
 VOLUME /cctv/motion
