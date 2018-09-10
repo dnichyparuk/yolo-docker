@@ -258,11 +258,13 @@ def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, sto
     tags = {} # resulted tags - maybe depricated soon
     objects = [] # resulted objects - tag + coordinates + image only for highest percentage
 
+    currentFps = 0
     currentFrame = 0
     detections = ()
 
     while video.isOpened():
         currentFrame = currentFrame + 1
+        currentFps = currentFps + 1
         if currentFrame > cfg['yolo']['tagEveryFrame']:
             shouldDetect = True
             currentFrame = 0
@@ -307,8 +309,8 @@ def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, sto
                     imageUrl = taggedVideo.replace(".avi", "-"+detection[0]+".jpg")
 
                     tracked = {
-                        "name": detection[0],
                         "probability": np.rint(100 * detection[1]),
+                        "frame": currentFps,
                         "x": xCoord,
                         "y": yCoord,
                         "x2": xCoord + xEntent,
@@ -316,20 +318,23 @@ def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, sto
                         }
 
                     objIsFound = False
+                    isBestProbability = False
                     for obj in objects:
                         if (obj["name"] == detection[0]): 
                             objIsFound = True
                             obj["tracked"].append(tracked)
                             if (obj["probability"] < detection[1]):
+                                isBestProbability = True
                                 obj["probability"] = np.rint(100 * detection[1])
-                                obj["image"] = imageUrl
-                    
+                                         
                     if (not objIsFound):
+                        isBestProbability = True
                         objects.append({
                             "name": detection[0],
                             "probability": np.rint(100 * detection[1]),
                             "tracked": [tracked],
-                            "image": imageUrl
+                            "image": imageUrl,
+                            "fps": fps
                         })
 
                     if (storeTaggedVideo or storeKeyDetectionImages):
@@ -353,7 +358,7 @@ def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, sto
                         cv2.putText(image, pstring, (xCoord, yCoord - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, boxColor, 2,
                                     cv2.LINE_AA)
 
-                    if (storeKeyDetectionImages):
+                    if (storeKeyDetectionImages and isBestProbability):
                         cv2.imwrite(imageUrl, image)
 
             if (storeTaggedVideo):
@@ -430,7 +435,12 @@ while True:
             continue
 
         filename, file_extension = os.path.splitext(os.path.basename(videoFile[0]))
-        taggedVideo = cfg['yolo']['processedFolder'] + '/' + filename + '.avi'
+        datePart = pytz.utc.localize(datetime.datetime.fromtimestamp(recording['startTime']/1000)).astimezone(pst).strftime('%Y/%m/%d')
+        path = cfg['yolo']['processedFolder'] + '/' + datePart
+        taggedVideo = path +'/' + filename + '.avi'
+
+        if ((cfg['yolo']['storeTaggedVideo'] or cfg['yolo']['storeKeyDetectionImages']) and not os.path.exists(path)):
+            os.makedirs(path)
 
         tags, objects = performDetect(videoFile[0], taggedVideo, cfg['yolo']['threshold'], cfg['yolo']['storeTaggedVideo'], cfg['yolo']['storeKeyDetectionImages'])
 
