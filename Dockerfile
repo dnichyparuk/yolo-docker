@@ -21,11 +21,3 @@ RUN make
 
 RUN pip install opencv-python numpy scikit-image paho-mqtt pyyaml requests urllib3 pytz
 
-COPY /config/* /config/
-COPY /darknet/* /darknet/
-
-VOLUME /config
-VOLUME /cctv/motion
-VOLUME /cctv/tagged
-
-CMD [ "python", "detect.py"]
