@@ -232,7 +232,7 @@ def initYolo(configPath ="./cfg/yolov3.cfg", weightPath ="yolov3.weights", metaP
             pass
 
 
-def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, storeTaggedVideo=False):
+def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, storeTaggedVideo=False, storeKeyDetectionImages=False):
     global everyFrame  # pylint: disable=W0603
     assert 0 < thresh < 1, "Threshold should be a float between zero and one (non-inclusive)"
 
@@ -255,7 +255,8 @@ def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, sto
 
         videoWriter = cv2.VideoWriter(taggedVideo, fourcc, fps, (width, height))
 
-    tags = {}
+    tags = {} # resulted tags - maybe depricated soon
+    objects = [] # resulted objects - tag + coordinates + image only for highest percentage
 
     currentFrame = 0
     detections = ()
@@ -278,42 +279,71 @@ def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, sto
                 if (detection[0] not in tags) or (tags[detection[0]] < detection[1]):
                     tags[detection[0]] = np.rint(100 * detection[1])
 
-        if storeTaggedVideo:
-            try:
-                image = frame
+        try:
+            image = frame
 
-                if shouldDetect:
-                    imcaption = []
-                    for detection in detections:
-                        label = detection[0]
-                        confidence = detection[1]
-                        pstring = label + ": " + str(np.rint(100 * confidence)) + "%"
-                        imcaption.append(pstring)
-                        # print(pstring)
-                        bounds = detection[2]
-                        shape = image.shape
-                        yExtent = int(bounds[3])
-                        xEntent = int(bounds[2])
-                        # Coordinates are around the center
-                        xCoord = int(bounds[0] - bounds[2] / 2)
-                        yCoord = int(bounds[1] - bounds[3] / 2)
-                        boundingBox = [
-                            [xCoord, yCoord],
-                            [xCoord, yCoord + yExtent],
-                            [xCoord + xEntent, yCoord + yExtent],
-                            [xCoord + xEntent, yCoord]
-                        ]
+            if shouldDetect:
+                imcaption = []
+                for detection in detections:
+                    label = detection[0]
+                    confidence = detection[1]
+                    pstring = label + ": " + str(np.rint(100 * confidence)) + "%"
+                    imcaption.append(pstring)
+                    # print(pstring)
+                    bounds = detection[2]
+                    shape = image.shape
+                    yExtent = int(bounds[3])
+                    xEntent = int(bounds[2])
+                    # Coordinates are around the center
+                    xCoord = int(bounds[0] - bounds[2] / 2)
+                    yCoord = int(bounds[1] - bounds[3] / 2)
+                    boundingBox = [
+                        [xCoord, yCoord],
+                        [xCoord, yCoord + yExtent],
+                        [xCoord + xEntent, yCoord + yExtent],
+                        [xCoord + xEntent, yCoord]
+                    ]
+
+                    imageUrl = taggedVideo.replace(".avi", "-"+detection[0]+".jpg")
+
+                    tracked = {
+                        "name": detection[0],
+                        "probability": np.rint(100 * detection[1]),
+                        "x": xCoord,
+                        "y": yCoord,
+                        "x2": xCoord + xEntent,
+                        "y2": yCoord + yExtent
+                        }
+
+                    objIsFound = False
+                    for obj in objects:
+                        if (obj["name"] == detection[0]): 
+                            objIsFound = True
+                            obj["tracked"].append(tracked)
+                            if (obj["probability"] < detection[1]):
+                                obj["probability"] = np.rint(100 * detection[1])
+                                obj["image"] = imageUrl
+                    
+                    if (not objIsFound):
+                        objects.append({
+                            "name": detection[0],
+                            "probability": np.rint(100 * detection[1]),
+                            "tracked": [tracked],
+                            "image": imageUrl
+                        })
+
+                    if (storeTaggedVideo or storeKeyDetectionImages):
                         # Wiggle it around to make a 3px border
                         rr, cc = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] for x in boundingBox],
                                                         shape=shape)
                         rr2, cc2 = draw.polygon_perimeter([x[1] + 1 for x in boundingBox], [x[0] for x in boundingBox],
-                                                          shape=shape)
+                                                        shape=shape)
                         rr3, cc3 = draw.polygon_perimeter([x[1] - 1 for x in boundingBox], [x[0] for x in boundingBox],
-                                                          shape=shape)
+                                                        shape=shape)
                         rr4, cc4 = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] + 1 for x in boundingBox],
-                                                          shape=shape)
+                                                        shape=shape)
                         rr5, cc5 = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] - 1 for x in boundingBox],
-                                                          shape=shape)
+                                                        shape=shape)
                         boxColor = (int(255 * (1 - (confidence ** 2))), int(255 * (confidence ** 2)), 0)
                         draw.set_color(image, (rr, cc), boxColor, alpha=0.8)
                         draw.set_color(image, (rr2, cc2), boxColor, alpha=0.8)
@@ -323,16 +353,19 @@ def performDetect(videoPath="test.mp4", taggedVideo="test.avi", thresh=0.25, sto
                         cv2.putText(image, pstring, (xCoord, yCoord - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.7, boxColor, 2,
                                     cv2.LINE_AA)
 
+                    if (storeKeyDetectionImages):
+                        cv2.imwrite(imageUrl, image)
+
+            if (storeTaggedVideo):
                 videoWriter.write(image)
 
-            except Exception as e:
-                print("Video processing error: " + str(e))
+        except Exception as e:
+            print("Video processing error: " + str(e))
 
     if storeTaggedVideo:
         videoWriter.release()
     video.release()
-    return tags
-
+    return tags, objects
 
 # Real work started here
 
@@ -399,13 +432,16 @@ while True:
         filename, file_extension = os.path.splitext(os.path.basename(videoFile[0]))
         taggedVideo = cfg['yolo']['processedFolder'] + '/' + filename + '.avi'
 
+        tags, objects = performDetect(videoFile[0], taggedVideo, cfg['yolo']['threshold'], cfg['yolo']['storeTaggedVideo'], cfg['yolo']['storeKeyDetectionImages'])
+
         detections = {
             'startTime': recordingTime,
             'endTime': recordingStopTime,
             'camera': recording['meta']['cameraName'],
             'recordingId': recording['_id'],
             'recordingUrl': recordingUrl,
-            'tags': performDetect(videoFile[0], taggedVideo, cfg['yolo']['threshold'], cfg['yolo']['storeTaggedVideo'])
+            'tags': tags,
+            "objects": objects
         }
 
         if cfg['yolo']['storeTaggedVideo']:
