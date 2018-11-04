@@ -20,5 +20,5 @@ RUN sed -i "s/OPENCV=0/OPENCV=1/g" Makefile \
 RUN make
 
 RUN pip install 'matplotlib==2.2.2'
-RUN pip install opencv-python numpy scikit-image paho-mqtt pyyaml requests urllib3 pytz
+RUN pip install opencv-python numpy scikit-image paho-mqtt pyyaml requests urllib3 pytz pygtail
 
