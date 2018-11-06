@@ -1,5 +1,5 @@
-FROM nvidia/cuda:9.2-cudnn7-devel-ubuntu16.04
-LABEL maintainer="Uladzimir Kazakevich"
+FROM nvidia/cuda:9.2-cudnn7-devel-ubuntu18.04
+LABEL maintainer="Dzmitry Nichyparuk"
 
 RUN apt-get update \
     && apt-get -y upgrade \
