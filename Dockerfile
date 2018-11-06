@@ -1,6 +1,7 @@
 FROM nvidia/cuda:9.2-cudnn7-devel-ubuntu18.04
 LABEL maintainer="Dzmitry Nichyparuk"
-
+ENV TZ=Europe/Minsk
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get install -y \
